@@ -11,6 +11,6 @@ Album
 
 :setup
 
-pub a picture or video to public/friends/original/
+put a picture or video to public/friends/original/
 
 Thumbnail will be generated at the timing of access
