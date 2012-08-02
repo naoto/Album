@@ -6,6 +6,9 @@ require 'erb'
 require 'json'
 require 'RMagick'
 
+ORIGIN = "public/friends/original"
+ITEM = 9
+
 namespace '/friends' do
 
   get '/' do
@@ -17,12 +20,19 @@ namespace '/friends' do
   end
 
   get '/pictures' do
-    {picture: Dir.glob("public/friends/original/picture/**/*").map { |f| f.gsub(/^public\/friends\/original\/picture\//,'')}.sort }.to_json
+    begin
+      params[:page] ||= 1
+      start = params[:page].to_i * ITEM
+      limit = start + ITEM
+      {picture: Dir.glob("#{ORIGIN}/picture/**/*")[start...limit].map { |f| f.gsub(/^#{ORIGIN}\/picture\//,'')}.sort }.to_json
+    rescue => e
+      {picture: []}.to_json
+    end
   end
 
   get '/tumb/:filename' do
     path = "public/tumb/#{params[:filename]}"
-    Magick::ImageList.new("public/friends/original/picture/#{params[:filename]}").resize_to_fill(240,240).write(path) unless File.exists?(path)
+    Magick::ImageList.new("#{ORIGIN}/picture/#{params[:filename]}").resize_to_fill(240,240).write(path) unless File.exists?(path)
     open(path).read
   end
 
@@ -33,12 +43,12 @@ namespace '/friends' do
 
   get '/pic/L/:filename' do
     path = "public/L/#{params[:filename]}"
-    Magick::ImageList.new("public/friends/original/picture/#{params[:filename]}").resize_to_fit(1024,960).write(path) unless File.exists?(path)
+    Magick::ImageList.new("#{ORIGIN}/picture/#{params[:filename]}").resize_to_fit(1024,960).write(path) unless File.exists?(path)
     open(path).read
   end
 
   post '/upload' do
-    File.open("public/friends/original/picture/#{params[:file][:filename]}", 'wb'){ |f| f.write(params[:file][:tempfile].read) } if params[:file]
+    File.open("#{ORIGIN}/picture/#{params[:file][:filename]}", 'wb'){ |f| f.write(params[:file][:tempfile].read) } if params[:file]
     params[:file][:filename]
   end
 
@@ -57,38 +67,11 @@ __END__
       <link rel="stylesheet" href="../css/ie.css" type="text/css" media="screen, projection">
     <![endif]-->
     <link rel="stylesheet" href="../css/style.css" type="text/css" media="screen, projection">
-    <script src="../js/jquery-1.7.2.min.js"></script>
-    <script>
-      $(document).ready(function(){
-        $('#picture').click(function(){
-          $.getJSON("../pictures", function(data){
-            $("#main").html("");
-            $.each(data.picture, function(){
-              $("#main").append("<div class=\"span-6\"><a href=\"./" + this + "\"><img src=\"../tumb/" + this +"\" /></a></span>");
-            });
-          });
-        });
-        $('#video').click(function(){
-          $.getJSON("../videos", function(data){
-            $("#main").html("");
-            $.each(data.video,  function(){
-              $("#main").append("<a class=\"button video\">" + this + "</a");
-            });
-            $("#main").append("<div id=\"player\" class=\"span-24\"></div>");
-            $(".video").click(function(){
-              $("#player").html("<video src=\"./video/" + $(this).text() + "\" controls></vide>");
-            });
-          });
-        });
-      });
-    </script>
   </head>
   <body>
   <div class="container">
       <h1 id="title" class="span-16">Album</h1>
       <div class="span-8">
-        <a id="video" href="#" class="button">VIDEO</a>
-        <a id="picture" href="#" class="button">PICTURE</a>
         <a id="original" href="../original/picture/<%= @filename %>" class="button">ORIGINAL</a>
       </div>
   </div>
@@ -113,13 +96,26 @@ __END__
     <script src="js/jquery-1.7.2.min.js"></script>
     <script src="js/jquery.upload-1.0.2.min.js"></script>
     <script>
+      var _page = 0;
+      var jump_pict = function(data){
+        $("#main").html("");
+        $.each(data.picture, function(){
+          $("#main").append("<div class=\"span-6\"><a href=\"./pic/" + this + "\" target=\"_blank\"><img src=\"./tumb/" + this +"\" /></a></span>");
+        });
+      }
       $(document).ready(function(){
         $('#picture').click(function(){
-          $.getJSON("./pictures", function(data){
-            $("#main").html("");
-            $.each(data.picture, function(){
-              $("#main").append("<div class=\"span-6\"><a href=\"./pic/" + this + "\" target=\"_blank\"><img src=\"./tumb/" + this +"\" /></a></span>");
-            });
+          _page = 0;
+          $.getJSON("./pictures", {"page": _page}, jump_pict);
+          $("#pager").append("<a id=\"prev\" href=\"#\" class=\"button\">&lt;</a>");
+          $("#pager").append("<a id=\"next\" href=\"#\" class=\"button\">&gt;</a>");
+          $("#prev").click(function(){
+            if(_page > 0) { _page--; }
+            $.getJSON("./pictures", {"page": _page}, jump_pict);
+          });
+          $("#next").click(function(){
+            _page++;
+            $.getJSON("./pictures", {"page": _page}, jump_pict);
           });
         });
         $('#video').click(function(){
@@ -152,7 +148,9 @@ __END__
       </div>
   </div>
   <div class="container">
-    <div id="main" class="span-30">
+    <div id="main" class="span-24">
+    </div>
+    <div id="pager" class="span-24">
     </div>
   </div>
   </body>
