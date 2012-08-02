@@ -24,7 +24,7 @@ namespace '/friends' do
       params[:page] ||= 1
       start = params[:page].to_i * ITEM
       limit = start + ITEM
-      {picture: Dir.glob("#{ORIGIN}/picture/**/*")[start...limit].map { |f| f.gsub(/^#{ORIGIN}\/picture\//,'')}.sort }.to_json
+      {picture: Dir.glob("#{ORIGIN}/picture/**/*").map { |f| f.gsub(/^#{ORIGIN}\/picture\//,'')}.sort.reverse[start...limit] }.to_json
     rescue => e
       {picture: []}.to_json
     end
@@ -95,48 +95,7 @@ __END__
     <link rel="stylesheet" href="css/style.css" type="text/css" media="screen, projection">
     <script src="js/jquery-1.7.2.min.js"></script>
     <script src="js/jquery.upload-1.0.2.min.js"></script>
-    <script>
-      var _page = 0;
-      var jump_pict = function(data){
-        $("#main").html("");
-        $.each(data.picture, function(){
-          $("#main").append("<div class=\"span-6\"><a href=\"./pic/" + this + "\" target=\"_blank\"><img src=\"./tumb/" + this +"\" /></a></span>");
-        });
-      }
-      $(document).ready(function(){
-        $('#picture').click(function(){
-          _page = 0;
-          $.getJSON("./pictures", {"page": _page}, jump_pict);
-          $("#pager").append("<a id=\"prev\" href=\"#\" class=\"button\">&lt;</a>");
-          $("#pager").append("<a id=\"next\" href=\"#\" class=\"button\">&gt;</a>");
-          $("#prev").click(function(){
-            if(_page > 0) { _page--; }
-            $.getJSON("./pictures", {"page": _page}, jump_pict);
-          });
-          $("#next").click(function(){
-            _page++;
-            $.getJSON("./pictures", {"page": _page}, jump_pict);
-          });
-        });
-        $('#video').click(function(){
-          $.getJSON("./videos", function(data){
-            $("#main").html("");
-            $.each(data.video,  function(){
-              $("#main").append("<a class=\"button video\">" + this + "</a");
-            });
-            $("#main").append("<div id=\"player\" class=\"span-24\"></div>");
-            $(".video").click(function(){
-              $("#player").html("<video src=\"./video/" + $(this).text() + "\" controls></vide>");
-            });
-          });
-        });
-        $('#upload').change(function(){
-          $(this).upload('./upload', function(res) {
-              $("#main").append("<div class=\"span-6\"><a href=\"./pic/" + res + "\" target=\"_blank\"><img src=\"./tumb/" + res +"\" /></a></span>");
-          },'text');
-        });
-      });
-    </script>
+    <script src="js/album.js"></script>
   </head>
   <body>
   <div class="container">
