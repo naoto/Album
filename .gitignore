@@ -1,0 +1,9 @@
+Gemfile.lock
+log/*
+public/L/*
+public/friends/original/*
+public/friends/video/*
+public/tumb/*
+unicorn.conf
+config.ru
+
