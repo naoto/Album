@@ -1,0 +1,16 @@
+Album
+=====================================
+
+:install
+
+> $ git clone https://github.com/naoto/Album.git
+
+:run
+
+> $ ./serve.rb
+
+:setup
+
+pub a picture or video to public/friends/original/
+
+Thumbnail will be generated at the timing of access
